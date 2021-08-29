@@ -26,7 +26,7 @@ chown -R alok:singh /home/alok/
 usermod -aG sudo alok
 
 ### Set Timezone
-sudo timedatectl set-timezone Asia/Kolkata![image](https://user-images.githubusercontent.com/14859192/131240499-df14c07c-a4b9-4474-a169-9b39f75d7b18.png)
+sudo timedatectl set-timezone Asia/Kolkata
 
 ### Install Docker
 sudo snap install docker
@@ -48,19 +48,20 @@ sudo usermod -a -G microk8s alok
 sudo chown -f -R alok ~/.kube
 
 sudo nano /etc/docker/daemon.json
-{
-    "exec-opts": ["native, cgroupdriver=systemd"],
-    "log-driver": "json-file",
-     "log-opts": {
-        "max-size": "100m"
-     },
-     "storage-driver": "overlay2"
-}
+
+	{
+	    "exec-opts": ["native, cgroupdriver=systemd"],
+	    "log-driver": "json-file",
+	     "log-opts": {
+		"max-size": "100m"
+	     },
+	     "storage-driver": "overlay2"
+	}
 
 
 sudo nano /etc/sysctl.conf
 
-net.ipv4.ip_forward=1
+	net.ipv4.ip_forward=1
 
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
@@ -111,6 +112,7 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/a
 kubectl get svc -n kubernetes-dashboard
 
 kubectl edit svc -n kubernetes-dashboard kubernetes-dashboard
+
 	spec:
 	  type: LoadBalancer	# this has to be changed to LoadBalancer to access the dashboard externally 
 	  externalIPs:
@@ -125,6 +127,8 @@ kubectl get secrets -n kafka-cluster
 kubectl get secret dashboard-token-bspqw -n kafka-cluster -o jsonpath="{.data.token}" | base64 --decode
 
 https://jgte
+
+![alt text](https://github.com/alokkusingh/RaspberryPi-Kubernetes/blob/master/media/k-dbd-rs.png?raw=true "Kubernetes Dashboard")
 
 
 ## Misc Commands
