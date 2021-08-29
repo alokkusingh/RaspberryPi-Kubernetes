@@ -87,24 +87,24 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 
 ### Setup Deployments - Kafka Cluster Setup
 #### Create Namespaces
-kubectl apply -f yaml/namespace-kafka.yaml
+kubectl apply -f https://github.com/alokkusingh/kafka-experimental/blob/master/yaml/namespace-kafka.yaml
 
 #### Create Netwrok policy
-kubectl apply -f yaml/kafka-networkpolicy.yaml
+kubectl apply -f https://github.com/alokkusingh/kafka-experimental/blob/master/yaml/kafka-networkpolicy.yaml
 
 #### Create Zookeeper - Pod/Deployment/Service
-kubectl apply --validate=true --dry-run=client --filename=yaml/zookeeper-cluster.yaml
+kubectl apply --validate=true --dry-run=client --filename=https://github.com/alokkusingh/kafka-experimental/blob/master/yaml/zookeeper-cluster.yaml
 
-kubectl apply -f yaml/zookeeper-cluster.yaml  --namespace=kafka-cluster
+kubectl apply -f https://github.com/alokkusingh/kafka-experimental/blob/master/yaml/zookeeper-cluster.yaml  --namespace=kafka-cluster
 ##### In case want to delete
-kubectl delete -f yaml/zookeeper-cluster.yaml  --namespace=kafka-cluster
+kubectl delete -f https://github.com/alokkusingh/kafka-experimental/blob/master/yaml/zookeeper-cluster.yaml  --namespace=kafka-cluster
 
 #### Create Kafka Broker - Pod/Deployment/Service
-kubectl apply --validate=true --dry-run=client --filename=yaml/kafka-cluster.yaml 
+kubectl apply --validate=true --dry-run=client --filename=https://github.com/alokkusingh/kafka-experimental/blob/master/yaml/kafka-cluster.yaml 
 
-kubectl apply -f yaml/kafka-cluster.yaml  --namespace=kafka-cluster
+kubectl apply -f https://github.com/alokkusingh/kafka-experimental/blob/master/yaml/kafka-cluster.yaml  --namespace=kafka-cluster
 ##### In case want to delete
-kubectl delete -f yaml/kafka-cluster.yaml  --namespace=kafka-cluster
+kubectl delete -f https://github.com/alokkusingh/kafka-experimental/blob/master/yaml/kafka-cluster.yaml  --namespace=kafka-cluster
 
 #### Setup Kubernetes Dashboard
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml
