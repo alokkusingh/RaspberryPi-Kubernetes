@@ -15,12 +15,13 @@ Kubernetes cluster setup on Raspberry Pi 4
 
 ## Raspberry Pi Setup
 ### Add User/Group
+Run the below using root user priviliage or sudo
 	groupadd -g 600 singh
 	useradd -u 601 -g 600 -s /usr/bin/bash alok
-	passwd alok
 	mkdir /home/alok
 	chown -R alok:singh /home/alok/
 	usermod -aG sudo alok
+	passwd alok
 
 ### Set Timezone
 	sudo timedatectl set-timezone Asia/Kolkata
@@ -55,23 +56,24 @@ Kubernetes cluster setup on Raspberry Pi 4
 	kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
 ### Micro8s operation commnads
-	The start command will start all enabled Kubernetes services: 	    microk8s.start
-	The inspect command will give you the status of services: 	        microk8s.inspect
-	The stop command will stop all Kubernetes services: 	              microk8s.stop
-	You can easily enable Kubernetes add-ons, eg. to enable “kubedns”: 	microk8s.enable dns
-	To get the status of the cluster: 	                                microk8s.kubectl cluster-info
-	Set up DNS	microk8s enable dns
+| Command Description | Command |
+| :---: | :--- |
+| Start Kubernetes services| ``microk8s.start`` |
+| The status of services| ``microk8s.inspect`` |
+| Stop all Kubernetes services| ``microk8s.stop`` |
+| Status of the cluster| ``microk8s.kubectl cluster-info`` |
+| Set up DNS microk8s enable dns| ``microk8s enable dns`` |
 
 
 ## Kubernetes Setup
 ### Node Cluster Setup
-	Master Node:	                sudo microk8s.add-node
-	Slave Node:	                  microk8s join 192.168.0.200:25000/201afbfc67544696d01eed22a56d5030/4496beb91a5d
-	Node List:	                  microk8s.kubectl get node
-	Remove Node from Master:	    sudo microk8s remove-node <node name>
-	Leave Node from Slave:	      sudo microk8s.leave
-	Get Nodes:	                  kubectl get nodes
-	Get Pods:                     kubectl get pods --all-namespaces
+| Command Description | Command |
+| :---: | :--- |
+| Add Master Node| ``sudo microk8s.add-node`` |
+| Add a Slave Node| ``microk8s join 192.168.0.200:25000/201afbfc67544696d01eed22a56d5030/4496beb91a5d`` |
+| Node List| ``kubectl get nodes`` |
+| Remove Node by Master| ``sudo microk8s remove-node <node name>`` |
+| Leave Node by Slave| ``sudo microk8s.leave`` |
 
 
 ### Setup Deployments - Kafka Cluster Setup
