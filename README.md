@@ -1,5 +1,5 @@
 # RaspberryPi-Kubernetes
-Kubernetes cluster setup on Raspberry Pi 4
+Kubernetes cluster setup on Raspberry Pi 4B
 
 ## Raspberry Pi Information
 | Item | Information |
@@ -8,7 +8,7 @@ Kubernetes cluster setup on Raspberry Pi 4
 | Pi1 Hostname | jgte - static IP assigned by router (192.168.0.200) |
 | Pi2 Hostname | khbr - static IP assigned by router (192.168.0.201) |
 | CPU Architecture | ARM64 (not AMD64) |
-| Number of Processors | 4 |
+| Processor | 1.5GHz quad-core processors |
 | RAM | 8GB |
 | Disk | SanDisk MicroSD 32GB |
 | OS | Linux jgte 5.4.0-1041-raspi #45-Ubuntu SMP PREEMPT Thu Jul 15 01:17:56 UTC 2021 aarch64 aarch64 aarch64 GNU/Linux |
