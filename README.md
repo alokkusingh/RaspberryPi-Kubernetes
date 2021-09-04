@@ -114,16 +114,32 @@ Run the below using root user priviliage or sudo
 	kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml
 #####
 	kubectl get svc -n kubernetes-dashboard
-#####
+##### Change service type to LoadBalancer to access the dashboard externally
+	kubectl edit svc -n kubernetes-dashboard kubernetes-dashboard
+
+		spec:
+		  type: LoadBalancer	# this has to be changed to LoadBalancer to access the dashboard externally 
+
+##### Work arround for configuring Netwrok Load Balancing
+Kubernetes does not offer an implementation of network load balancers (Services of type LoadBalancer) for bare-metal clusters. If you’re not running Kubernetes on a supported IaaS platform (GCP, AWS, Azure…), LoadBalancers will remain in the “pending” state indefinitely when created.
+
+Bare-metal cluster operators are left with two lesser tools to bring user traffic into their clusters, “NodePort” and “externalIPs” services.
+
+For LoadBalancer service type we left with 2 choices:
+###### Hard code the Node IPs - as below
 	kubectl edit svc -n kubernetes-dashboard kubernetes-dashboard
 
 		spec:
 		  type: LoadBalancer	# this has to be changed to LoadBalancer to access the dashboard externally 
 		  externalIPs:
 		  - 192.168.0.200		# this is needed because public IP cant be assigned automaic
-#####
+###### Use one of the LoadBalancer implemented to olve this burpose. One of them is MetaLib.
+MetalLB (https://metallb.universe.tf) aims to redress this imbalance by offering a network load balancer implementation that integrates with standard network equipment, so that external services on bare-metal clusters also “just work” as much as possible.
+
+##### Crete Service Account for Dashboard Login
 	kubectl create serviceaccount dashboard -n kafka-cluster
-#####
+	
+##### Assign Role to Service Account
 	kubectl create clusterrolebinding dashboard-admin -n kafka-cluster --clusterrole=cluster-admin --serviceaccount=kafka-cluster:dashboard
 
 ##### Get Dashboard Login Admin Credential
