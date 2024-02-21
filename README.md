@@ -140,12 +140,12 @@ ssh alok@jgte sudo usermod -a -G microk8s alok
 ssh alok@jgte sudo chown -f -R alok ~/.kube
 ```
 ---
-### Create `kubectl` alias
+### Setup
+#### Create `kubectl` alias
 ```shell
 ssh alok@jgte sudo snap alias microk8s.kubectl kubectl
 ```
 ---
-### Setup
 #### Start Microk8s
 ```shell
 ssh alok@jgte microk8s.start
