@@ -158,6 +158,7 @@ ssh alok@jgte micrk8s enable dns
 ```
 -----
 #### Enable Ingress
+Enable Nginx Ingress Controller. This will deploy a daemonset nginx-ingress-microk8s-controller.
 ```shell
 ssh alok@jgte microk8s enable ingress
 ```
