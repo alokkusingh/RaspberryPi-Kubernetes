@@ -14,59 +14,204 @@ Kubernetes cluster setup on Raspberry Pi 4B
 | OS | Linux jgte 5.4.0-1041-raspi #45-Ubuntu SMP PREEMPT Thu Jul 15 01:17:56 UTC 2021 aarch64 aarch64 aarch64 GNU/Linux |
 
 ## Raspberry Pi Setup
+### Prepare Boot Card
+```
+https://ubuntu.com/tutorials/how-to-install-ubuntu-on-your-raspberry-pi#2-prepare-the-sd-card
+```
+---
+## Dev OS update
+### Add host entry
+Add below entry in `/etc/hosts`
+````
+192.168.1.200   jgte kubernetes
+````
+```shell
+vim /etc/hosts
+```
+---
+## OS Setup
 ### Add User/Group
-Run the below using root user priviliage or sudo
-	groupadd -g 600 singh
-####
-	useradd -u 601 -g 600 -s /usr/bin/bash alok
-####
-	mkdir /home/alok
-####	
-	chown -R alok:singh /home/alok/
-####
-	usermod -aG sudo alok
-####
-	passwd alok
+```shell
+ssh ubuntu@jgte sudo groupadd -g 600 singh
+```
+```shell
+ssh ubuntu@jgte sudo ueradd -u 601 -g 600 -s /usr/bin/bash alok
+```
+```shell
+ssh ubuntu@jgte sudo mkdir /home/alok
+```
+```shell
+ssh ubuntu@jgte sudo chown -R alok:singh /home/alok/
+```
+```shell
+ssh ubuntu@jgte sudo usermod -aG sudo alok
+```
+```shell
+ssh ubuntu@jgte sudo passwd alok
+```
+---
+### Create Password-less SSH Login
+```shell
+ssh-keygen
+```
+```shell
+cat ~/.ssh/id_rsa.pub | ssh alok@jgte "mkdir -p ~/.ssh && cat >>  ~/.ssh/authorized_keys"
+```
+---
+### Add user to sudor group
+```shell
+ssh ubuntu@jgte sudo usermod -aG sudo alok 
+```
+---
+### Install Net Tool
+```shell
+ssh alok@jgte sudo apt install net-tools
+```
+---
+### Install Snapd Package Manager
+```shell
+ssh alok@jgte sudo apt install snapd
+```
+---
+### OS Configs
+Enable IP forward
+````
+net.ipv4.ip_forward=1
+````
+```shell
+ssh alok@jgte sudo nano /etc/sysctl.conf
+```
+Set Timezone
+```shell
+ssh alok@jgte sudo timedatectl set-timezone Asia/Kolkata
+```
+---
+## Docker
+### Install Docker Daemon
+```shell
+ssh alok@jgte curl -fsSL https://get.docker.com -o get-docker.sh
+```
+```shell
+ssh alok@jgte sh get-docker.sh
+```
+### Add user in group
+```shell
+ssh ubuntu@jgte sudo groupadd docker
+```
+```shell
+ssh ubuntu@jgte sudo usermod -a -G docker alok
+```
+### Update Config
+Add below in `/etc/docker/daemon.json`
+````
+{
+    "exec-opts": ["native, cgroupdriver=systemd"],
+    "log-driver": "json-file",
+     "log-opts": {
+        "max-size": "100m"
+     },
+     "storage-driver": "overlay2"
+}
+````
+```shell
+ssh alok@jgte sudo nano /etc/docker/daemon.json
+```
+---
+## Microk8s
+### Preparation
+Add below line in file `/boot/firmware/cmdline.txt` (add in the same line from start)
+````
+cgroup_enable=memory cgroup_memory=1
+````
+```shell
+ssh alok@jgte sudo nano /boot/firmware/cmdline.txt
+```
+---
+### Installation
+```shell
+ssh alok@jgte sudo snap install microk8s --channel=1.25/stable --classic
+```
+### Add user in group
+By adding user in microk8s group, user will have full access to the cluster 
+```shell
+ssh alok@jgte sudo usermod -a -G microk8s alok
+```
+```shell
+ssh alok@jgte sudo chown -f -R alok ~/.kube
+```
+---
+### Create `kubectl` alias
+```shell
+ssh alok@jgte sudo snap alias microk8s.kubectl kubectl
+```
+---
+### Setup
+#### Start Microk8s
+```shell
+ssh alok@jgte microk8s.start
+```
+---
+#### Enable DNS
+```shell
+ssh alok@jgte micrk8s enable dns
+```
+-----
+#### Enable Ingress
+```shell
+ssh alok@jgte microk8s enable ingress
+```
+-----
+#### Enable RBAC
+```shell
+ssh alok@jgte microk8s enable rbac
+```
+---
+### Create Remote User - `alok`
+#### Create CSR for user `alok` and copy to Kubernetes master node
+```shell
+cd ~/cert/k8s
+openssl genrsa -out alok.key 2048
+openssl req -new -key alok.key -out alok-csr.pem -subj "/CN=alok/O=home-stack/O=ingress"
+scp alok-csr.pem alok@jgte:cert/
+```
+#### Sign User CSR on master node
+```shell
+ssh alok@jgte openssl x509 -req -in ~/cert/alok-csr.pem -CA /var/snap/microk8s/current/certs/ca.crt -CAkey /var/snap/microk8s/current/certs/ca.key -CAcreateserial -out ~/cert/alok-crt.pem -days 365
+```
+#### Copy Signed User Certificate to local server
+```shell
+scp alok@jgte:cert/alok-crt.pem ~/cert/k8s
+```
+#### Copy CA Certificate to local server
+```shell
+scp alok@jgte:/var/snap/microk8s/current/certs/ca.crt ~/cert/k8s
+```
+#### Create User Credentials - `alok`
+```shell
+kubectl config set-credentials alok --client-certificate=/Users/aloksingh/cert/k8s/alok-crt.pem --client-key=/Users/aloksingh/cert/k8s/alok.key --embed-certs=true
+```
+---
+#### Create Cluster - `home-cluster`
+```shell
+kubectl config set-cluster home-cluster --server=https://kubernetes:16443 --certificate-authority=/Users/aloksingh/cert/k8s/ca.crt --embed-certs=true
+```
+#### Bind User `alok` Context to Cluster `home-cluster` - `alok-home`
+```shell
+kubectl config set-context alok-home --cluster=home-cluster --namespace=home-stack --user alok
+```
+#### Use the context - `alok-home`
+```shell
+kubectl config use-context alok-home
+```
+---
+#### Test command
+Note: you will get permission denied as the role binding not done yet for the user `alok`
+```shell
+kubectl get nodes -o jsonpath='{}'
+```
+---
 
-### Set Timezone
-	sudo timedatectl set-timezone Asia/Kolkata
-
-### Install Docker
-	sudo snap install docker
-####
-	sudo groupadd docker
-####
-	sudo usermod -a -G docker alok
-####
-	sudo mount -t ntfs-3g /dev/sdb1 /media/myexdic
-
-### Install microk8s
-	sudo snap install microk8s --classic
-####
-	sudo snap alias microk8s.kubectl kubectl
-####
-	sudo usermod -a -G microk8s alok
-####
-	sudo chown -f -R alok ~/.kube
-####
-	sudo nano /etc/docker/daemon.json
-
-		{
-		    "exec-opts": ["native, cgroupdriver=systemd"],
-		    "log-driver": "json-file",
-		     "log-opts": {
-			"max-size": "100m"
-		     },
-		     "storage-driver": "overlay2"
-		}
-####
-	sudo nano /etc/sysctl.conf
-
-		net.ipv4.ip_forward=1
-####
-	kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-
-### Micro8s operation commnads
+### Micro8s operation commands
 | Command Description | Command |
 | :---: | :--- |
 | Start Kubernetes services| ``microk8s.start`` |
