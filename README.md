@@ -15,6 +15,7 @@ Kubernetes cluster setup on Raspberry Pi 4B
 
 ## Raspberry Pi Setup
 ### Prepare Boot Card
+Ubuntu Server Boot setup
 ```
 https://ubuntu.com/tutorials/how-to-install-ubuntu-on-your-raspberry-pi#2-prepare-the-sd-card
 ```
@@ -63,12 +64,12 @@ cat ~/.ssh/id_rsa.pub | ssh alok@jgte "mkdir -p ~/.ssh && cat >>  ~/.ssh/authori
 ssh ubuntu@jgte sudo usermod -aG sudo alok 
 ```
 ---
-### Install Net Tool
+### Install Net Tools
 ```shell
 ssh alok@jgte sudo apt install net-tools
 ```
 ---
-### Install Snapd Package Manager
+### Install Snap Package Manager
 ```shell
 ssh alok@jgte sudo apt install snapd
 ```
