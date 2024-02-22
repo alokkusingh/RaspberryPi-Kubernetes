@@ -348,6 +348,24 @@ Note: you will get permission denied as the role binding not done yet for the us
 kubectl get nodes -o jsonpath='{}'
 ```
 ---
+## Git
+### Configure Git
+```shell
+ssh alok@jgte "git config --global user.email alok.ku.singh@gmail.com"
+```
+```shell
+ssh alok@jgte "git config --global user.name alokkusingh"
+```
+```shell
+ssh alok@jgte "ssh-keygen -t rsa -b 4096 -C alok.ku.singh@gmail.com" 
+```
+Add the pub key to Github - SSH and GPG Key
+```shell
+ssh alok@jgte "mkdir data/git"
+```
+```shell
+ssh alok@jgte "cd data/git; git clone git@github.com:alokkusingh/BankStatements.git"
+```
 
 ### Micro8s operation commands
 | Command Description | Command |
