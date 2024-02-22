@@ -13,9 +13,118 @@ Kubernetes cluster setup on Raspberry Pi 4B
 | Disk | SanDisk MicroSD 32GB |
 | OS | Linux jgte 5.4.0-1041-raspi #45-Ubuntu SMP PREEMPT Thu Jul 15 01:17:56 UTC 2021 aarch64 aarch64 aarch64 GNU/Linux |
 
+## Table of contents
+<!-- TOC -->
+* [RaspberryPi-Kubernetes](#raspberrypi-kubernetes)
+  * [Raspberry Pi Information](#raspberry-pi-information)
+  * [Table of contents](#table-of-contents)
+  * [Raspberry Pi Setup](#raspberry-pi-setup)
+    * [Prepare Boot Card](#prepare-boot-card)
+  * [Dev OS update](#dev-os-update)
+    * [Add host entry](#add-host-entry)
+  * [OS Setup](#os-setup)
+    * [First Time Login](#first-time-login)
+    * [Enable Etehrnate interface with Static IP](#enable-etehrnate-interface-with-static-ip)
+    * [Set Hostname](#set-hostname)
+    * [Add User/Group](#add-usergroup)
+    * [Add user to sudor group](#add-user-to-sudor-group)
+    * [Create Password-less SSH Login](#create-password-less-ssh-login)
+    * [Install Net Tools](#install-net-tools)
+    * [Install Snap Package Manager](#install-snap-package-manager)
+    * [OS Configs](#os-configs)
+  * [Docker](#docker)
+    * [Install Docker Daemon](#install-docker-daemon)
+    * [Add user in group](#add-user-in-group)
+    * [Update Config](#update-config)
+  * [Microk8s](#microk8s)
+    * [Preparation](#preparation)
+    * [Installation](#installation)
+    * [Add user in group](#add-user-in-group-1)
+    * [Setup](#setup)
+      * [Create `kubectl` alias](#create-kubectl-alias)
+      * [Start Microk8s](#start-microk8s)
+      * [Enable DNS](#enable-dns)
+      * [Enable Ingress](#enable-ingress)
+      * [Enable RBAC](#enable-rbac)
+    * [Create Remote User - `alok`](#create-remote-user---alok)
+      * [Create CSR for user `alok` and copy to Kubernetes master node](#create-csr-for-user-alok-and-copy-to-kubernetes-master-node)
+      * [Sign User CSR on master node](#sign-user-csr-on-master-node)
+      * [Copy Signed User Certificate to local server](#copy-signed-user-certificate-to-local-server)
+      * [Copy CA Certificate to local server](#copy-ca-certificate-to-local-server)
+      * [Create User Credentials - `alok`](#create-user-credentials---alok)
+      * [Create Cluster - `home-cluster`](#create-cluster---home-cluster)
+      * [Bind User `alok` Context to Cluster `home-cluster` - `alok-home`](#bind-user-alok-context-to-cluster-home-cluster---alok-home)
+      * [Use the context - `alok-home`](#use-the-context---alok-home)
+      * [Test command](#test-command)
+    * [Micro8s operation commands](#micro8s-operation-commands)
+  * [Kubernetes Setup](#kubernetes-setup)
+    * [Node Cluster Setup](#node-cluster-setup)
+    * [Setup Deployments - Kafka Cluster Setup](#setup-deployments---kafka-cluster-setup)
+      * [Create Namespaces](#create-namespaces)
+      * [Create Netwrok policy](#create-netwrok-policy)
+      * [Create Zookeeper - Pod/Deployment/Service](#create-zookeeper---poddeploymentservice)
+
+        * [In case want to delete](#in-case-want-to-delete)
+      * [Create Kafka Broker - Pod/Deployment/Service](#create-kafka-broker---poddeploymentservice)
+
+        * [In case want to delete](#in-case-want-to-delete-1)
+      * [Setup Kubernetes Dashboard](#setup-kubernetes-dashboard)
+
+        * [Change service type to LoadBalancer to access the dashboard externally](#change-service-type-to-loadbalancer-to-access-the-dashboard-externally)
+        * [Work arround for configuring Netwrok Load Balancing](#work-arround-for-configuring-netwrok-load-balancing)
+          * [Hard code the Node IPs - as below](#hard-code-the-node-ips---as-below)
+          * [Use one of the LoadBalancer implemented to olve this burpose. One of them is MetaLib.](#use-one-of-the-loadbalancer-implemented-to-olve-this-burpose-one-of-them-is-metalib)
+        * [Crete Service Account for Dashboard Login](#crete-service-account-for-dashboard-login)
+        * [Assign Role to Service Account](#assign-role-to-service-account)
+        * [Get Dashboard Login Admin Credential](#get-dashboard-login-admin-credential)
+
+  * [Misc Commands](#misc-commands)
+
+
+
+
+
+    * [](#)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    * [](#-1)
+
+
+
+
+
+
+    * [](#-2)
+
+
+
+<!-- TOC -->
+
 ## Raspberry Pi Setup
 ### Prepare Boot Card
 Ubuntu Server Boot setup
+1. Choose Pi Version/OS/Storage
+2. EDIT SETTINGS
+   1. GENERAL 
+      1. Set wireless LAN setting
+      2. Set locals setting
+      3. Enable SSH and User: aloksingh
 ```
 https://ubuntu.com/tutorials/how-to-install-ubuntu-on-your-raspberry-pi#2-prepare-the-sd-card
 ```
@@ -31,24 +140,55 @@ vim /etc/hosts
 ```
 ---
 ## OS Setup
+### First Time Login
+xxx to be replaces by looking at the dynamic IP allocated for the Iefi interface
+```shell
+ssh aloksingh@192.168.1.xxx
+```
+### Enable Etehrnate interface with Static IP
+Add below config in `/etc/netplan/50-cloud-init.yaml`. You may leave Wifi config as is.
+```shell
+network:
+    version: 2
+    renderer: networkd
+    ethernets:
+      eth0:
+        dhcp4: no
+        addresses:
+          - 192.168.1.200/24
+        nameservers:
+          addresses: [8.8.8.8,8.8.8.4]
+        routes:
+          - to: default
+            via: 192.168.1.1
+```
+```shell
+sudo netplan apply
+```
+### Set Hostname
+```shell
+ssh aloksingh@jgte sudo -S hostnamectl set-hostname jgte 
+```
 ### Add User/Group
 ```shell
-ssh ubuntu@jgte sudo groupadd -g 600 singh
+ssh aloksingh@jgte sudo -S groupadd -g 600 singh
 ```
 ```shell
-ssh ubuntu@jgte sudo ueradd -u 601 -g 600 -s /usr/bin/bash alok
+ssh aloksingh@jgte sudo -S useradd -u 601 -g 600 -s /usr/bin/bash alok
 ```
 ```shell
-ssh ubuntu@jgte sudo mkdir /home/alok
+ssh aloksingh@jgte sudo -S mkdir /home/alok
 ```
 ```shell
-ssh ubuntu@jgte sudo chown -R alok:singh /home/alok/
+ssh aloksingh@jgte sudo -S chown -R alok:singh /home/alok/
 ```
 ```shell
-ssh ubuntu@jgte sudo usermod -aG sudo alok
+ssh aloksingh@jgte sudo -S passwd alok
 ```
+---
+### Add user to sudor group
 ```shell
-ssh ubuntu@jgte sudo passwd alok
+ssh aloksingh@jgte sudo -S usermod -aG sudo alok 
 ```
 ---
 ### Create Password-less SSH Login
@@ -59,19 +199,14 @@ ssh-keygen
 cat ~/.ssh/id_rsa.pub | ssh alok@jgte "mkdir -p ~/.ssh && cat >>  ~/.ssh/authorized_keys"
 ```
 ---
-### Add user to sudor group
-```shell
-ssh ubuntu@jgte sudo usermod -aG sudo alok 
-```
----
 ### Install Net Tools
 ```shell
-ssh alok@jgte sudo apt install net-tools
+ssh alok@jgte sudo -S apt install net-tools
 ```
 ---
 ### Install Snap Package Manager
 ```shell
-ssh alok@jgte sudo apt install snapd
+ssh alok@jgte sudo -S apt install snapd
 ```
 ---
 ### OS Configs
@@ -80,7 +215,7 @@ Enable IP forward
 net.ipv4.ip_forward=1
 ````
 ```shell
-ssh alok@jgte sudo nano /etc/sysctl.conf
+ssh alok@jgte sudo -S vim /etc/sysctl.conf
 ```
 Set Timezone
 ```shell
@@ -97,10 +232,10 @@ ssh alok@jgte sh get-docker.sh
 ```
 ### Add user in group
 ```shell
-ssh ubuntu@jgte sudo groupadd docker
+ssh alok@jgte sudo -S groupadd docker
 ```
 ```shell
-ssh ubuntu@jgte sudo usermod -a -G docker alok
+ssh alok@jgte sudo -S usermod -a -G docker alok
 ```
 ### Update Config
 Add below in `/etc/docker/daemon.json`
@@ -125,42 +260,42 @@ Add below line in file `/boot/firmware/cmdline.txt` (add in the same line from s
 cgroup_enable=memory cgroup_memory=1
 ````
 ```shell
-ssh alok@jgte sudo nano /boot/firmware/cmdline.txt
+ssh alok@jgte sudo -S nano /boot/firmware/cmdline.txt
 ```
 ---
 ### Installation
 ```shell
-ssh alok@jgte sudo snap install microk8s --channel=1.25/stable --classic
+ssh alok@jgte sudo -S snap install microk8s --channel=1.25/stable --classic
 ```
 ### Add user in group
 By adding user in microk8s group, user will have full access to the cluster 
 ```shell
-ssh alok@jgte sudo usermod -a -G microk8s alok
+ssh alok@jgte sudo -S usermod -a -G microk8s alok
 ```
 ```shell
-ssh alok@jgte sudo chown -f -R alok ~/.kube
+ssh alok@jgte sudo -S chown -f -R alok ~/.kube
 ```
 ---
 ### Setup
 #### Create `kubectl` alias
 ```shell
-ssh alok@jgte sudo snap alias microk8s.kubectl kubectl
+ssh alok@jgte sudo -S snap alias microk8s.kubectl kubectl
 ```
 ---
 #### Start Microk8s
 ```shell
-ssh alok@jgte microk8s.start
+ssh alok@jgte -S microk8s.start
 ```
 ---
 #### Enable DNS
 ```shell
-ssh alok@jgte micrk8s enable dns
+ssh alok@jgte -S microk8s enable dns
 ```
 -----
 #### Enable Ingress
 Enable Nginx Ingress Controller. This will deploy a daemonset nginx-ingress-microk8s-controller.
 ```shell
-ssh alok@jgte microk8s enable ingress
+ssh alok@jgte -S microk8s enable ingress
 ```
 -----
 #### Enable RBAC
@@ -174,11 +309,12 @@ ssh alok@jgte microk8s enable rbac
 cd ~/cert/k8s
 openssl genrsa -out alok.key 2048
 openssl req -new -key alok.key -out alok-csr.pem -subj "/CN=alok/O=home-stack/O=ingress"
+ssh alok@jgte mkdir cert
 scp alok-csr.pem alok@jgte:cert/
 ```
 #### Sign User CSR on master node
 ```shell
-ssh alok@jgte openssl x509 -req -in ~/cert/alok-csr.pem -CA /var/snap/microk8s/current/certs/ca.crt -CAkey /var/snap/microk8s/current/certs/ca.key -CAcreateserial -out ~/cert/alok-crt.pem -days 365
+ssh alok@jgte "openssl x509 -req -in ~/cert/alok-csr.pem -CA /var/snap/microk8s/current/certs/ca.crt -CAkey /var/snap/microk8s/current/certs/ca.key -CAcreateserial -out ~/cert/alok-crt.pem -days 365"
 ```
 #### Copy Signed User Certificate to local server
 ```shell
