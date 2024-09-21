@@ -134,6 +134,7 @@ https://ubuntu.com/tutorials/how-to-install-ubuntu-on-your-raspberry-pi#2-prepar
 Add below entry in `/etc/hosts`
 ````
 192.168.1.200   jgte kubernetes
+192.168.1.201   khbr 
 ````
 ```shell
 vim /etc/hosts
@@ -145,8 +146,8 @@ xxx to be replaces by looking at the dynamic IP allocated for the Iefi interface
 ```shell
 ssh aloksingh@192.168.1.xxx
 ```
-### Enable Etehrnate interface with Static IP
-Add below config in `/etc/netplan/50-cloud-init.yaml`. You may leave Wifi config as is.
+### Enable Ethernet interface with Static IP
+Add below config in `/etc/netplan/50-cloud-init.yaml` to configure static IP for eth interface. You may leave Wifi config as is.
 ```shell
 network:
     version: 2
@@ -161,6 +162,26 @@ network:
         routes:
           - to: default
             via: 192.168.1.1
+```
+### Enable Wifi interface with Static IP
+Add below config in `/etc/netplan/50-cloud-init.yaml` to configure static IP for wifi interface.
+```shell
+network:
+    version: 2
+    wifis:
+        renderer: networkd
+        wlan0:
+            access-points:
+                Alok_5GH:
+                    password: b885a9eea2d5fcfa6672ebca7bc92efcd64a2f5e51773f88c0fefd97b15682ea
+            dhcp4: false
+            addresses:
+              - 192.168.1.201/24
+            nameservers:
+              addresses: [8.8.8.8,8.8.8.4]
+            routes:
+              - to: default
+                via: 192.168.1.1
 ```
 ```shell
 sudo netplan apply
@@ -195,6 +216,7 @@ ssh aloksingh@jgte sudo -S usermod -aG sudo alok
 ```shell
 ssh-keygen
 ```
+Note: Skip keygen if you want to reuse the key pair
 ```shell
 cat ~/.ssh/id_rsa.pub | ssh alok@jgte "mkdir -p ~/.ssh && cat >>  ~/.ssh/authorized_keys"
 ```
@@ -342,10 +364,39 @@ kubectl config set-context alok-home --cluster=home-cluster --namespace=home-sta
 kubectl config use-context alok-home
 ```
 ---
+### Setup Worker Node (not control plane HA)
+#### Prerequisites
+1. OS Setup
+2. User Setup
+3. Microk8s installation
+4. Start Microk8s
+   4.1 Do not enable DNS
+#### Join as worker node
+From master node
+```shell
+sudo microk8s.add-node
+```
+From worker node
+```shell
+microk8s join 192.168.1.200:25000/01fd669b595c650e243ac70c02eb3b54/d2301359744a --worker
+```
+#### Leave cluster
+```shell
+sudo microk8s.leave
+```
+#### Extra
+If calico (CNI) not able to create IP routes you may have to upgrade kernal modules
+```shell
+sudo apt install linux-modules-extra-raspi
+```
 #### Test command
 Note: you will get permission denied as the role binding not done yet for the user `alok`
 ```shell
 kubectl get nodes -o jsonpath='{}'
+```
+Check if all pod ports (across nodes) are reachable
+```shell
+kubectl get pod --namespace home-stack -o json | jq .items[].status.podIP -r | fping
 ```
 ---
 ## Git
